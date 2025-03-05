@@ -1,0 +1,16 @@
+scheduler:
+  tasks:
+    - name: "utair"
+      enabled: true
+      type: "utair"
+      send_to:
+        - telegram-user-id-565809356
+      convert_times:  # Список времен для конверсии
+        - "3:01-utc"
+        - "12:45-utc"
+      time_ranges:   # Список диапазонов времени
+        - "01:00-03:00-utc"
+        - "13:00-15:00-utc"
+      air_companies:
+        - "WZ"
+        - "U6"

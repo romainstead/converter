@@ -1,0 +1,2 @@
+observation_date,observation_time,origin,destination,is_one_way,carrier,outbound_flight_no,aircraft_code,aircraft_name,outbound_departure_date,outbound_arrival_date,price_exc,tax,currency,transfer_iata,transfer_duration_minutes
+2025-03-05,01:00,MOW,AER,1,WZ,WZ123,SSJ 100,Sukhoi Superjet 100,2025-03-30 11:30,2025-03-30 15:15,6080,0,RUB,0,0
