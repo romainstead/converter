@@ -8,7 +8,7 @@ import os
 load_dotenv()
 
 
-# Получаем время в формате datetime.time
+# Получаем время в формате datetime.time из наименования файла
 def extract_time_from_filename(filename: str) -> time:
     # Выделяем время загрузки файла: 2025-03-05-01-00 -> ['01', '00']
     timestamp_str = Path(filename).stem.split("_")[2].split("-")[3::]
@@ -17,7 +17,7 @@ def extract_time_from_filename(filename: str) -> time:
     return timestamp
 
 
-# Функция проверки, находится ли время в диапазоне
+# Парсинг времени из конфига
 def parse_time_range(time_range_str):
     # Получаем начало и конец временного промежутка без "-utc"
     start_str, end_str = time_range_str.split('-')[:2]
