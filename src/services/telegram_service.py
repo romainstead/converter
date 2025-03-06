@@ -36,7 +36,7 @@ async def send_all_converted_files(chat_id):
 async def send_all_combined_files(chat_id):
     today = datetime.now(UTC)
     await bot.send_message(chat_id=chat_id, text="Отправка комбинированных файлов...", request_timeout=999999)
-    pattern = f'combined_prices_{today.year}-{today.month:02d}-{today.day:02d}*.csv'
+    pattern = f'combined_prices_??_{today.year}-{today.month:02d}-{today.day:02d}.csv'
     for filename in glob.glob(str(combined_dir / pattern)):
         document = FSInputFile(filename)
         await bot.send_document(chat_id=chat_id, document=document, request_timeout=999999)

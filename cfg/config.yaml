@@ -6,6 +6,7 @@ scheduler:
       send_to:
         - telegram-user-id-565809356
       convert_times:  # Список времен для конверсии
+        - "default"
         - "3:01-utc"
         - "12:45-utc"
       time_ranges:   # Список диапазонов времени
