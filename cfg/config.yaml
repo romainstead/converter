@@ -1,9 +1,12 @@
 config:
-  currency-url: https://v6.exchangerate-api.com/v6
-  s3-url: s3.timeweb.cloud
-  s3-bucket-name: 27731d10-saina-rivals
-  s3-currency-prefix: currency
-  send_to:
+  SMTP_SERVER: letter.tpu.ru
+  SMTP_PORT: 587
+  SENDER_EMAIL: "rao6@tpu.ru"
+  CURRENCY_URL: https://v6.exchangerate-api.com/v6
+  S3_URL: s3.timeweb.cloud
+  S3_BUCKET_NAME: 27731d10-saina-rivals
+  S3_CURRENCY_PREFIX: currency
+  SEND_TO:
     - telegram-user-id-565809356
 scheduler:
   currency: "EUR"

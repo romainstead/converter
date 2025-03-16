@@ -31,7 +31,7 @@ async def process_task(task_config):
     # Загружаем конвертированные и комбинированные файлы
     # Префикс у файлов будет по нейму из конфига
     upload_converted_files(task_config['name'] + "/")
-    for dest in config['config']['send_to']:
+    for dest in config['config']['SEND_TO']:
         # Выгрузка в телеграм
         if dest.startswith('telegram-user-id'):
             chat_id = dest.split('-')[-1]

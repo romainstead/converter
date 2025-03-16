@@ -8,7 +8,6 @@ def send_message():
     sender = "xxxx"
     recipient = "xxxx"
     password = "xxxx"  # Для Gmail лучше использовать App Password
-
     # Создаем сообщение
     msg = MIMEText("тест смтп.")
     msg['Subject'] = "Тестовое письмо"

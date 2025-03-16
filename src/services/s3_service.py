@@ -65,11 +65,11 @@ def download_today_files(prefix):
         # Сегодняшний день
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         # Подключение к S3
-        client = Minio(config['config']['s3-url'],
+        client = Minio(config['config']['S3_URL'],
                        access_key=os.getenv("S3_ACCESS"),
                        secret_key=os.getenv("S3_SECRET"),
                        secure=True)
-        bucket_name = config['config']['s3-bucket-name']
+        bucket_name = config['config']['S3_BUCKET_NAME']
         try:
             # Итерируем по списку объектов в rivals_i
             objects = client.list_objects(bucket_name, prefix=prefix, recursive=True)
@@ -113,11 +113,11 @@ def upload_converted_files(prefix):
     converted_dir = parent_dir / "converted"
     combined_dir = parent_dir / "combined"
     # Подключение к S3
-    client = Minio(config['config']['s3-url'],
+    client = Minio(config['config']['S3_URL'],
                    access_key=os.getenv("S3_ACCESS"),
                    secret_key=os.getenv("S3_SECRET"),
                    secure=True)
-    bucket_name = config['config']['s3-bucket-name']
+    bucket_name = config['config']['S3_BUCKET_NAME']
     try:
         # Выгружаем конвертированные файлы
         for root, _, files in os.walk(converted_dir):
