@@ -65,11 +65,11 @@ def download_today_files(prefix):
         # Сегодняшний день
         today = datetime.now(UTC).strftime("%Y-%m-%d")
         # Подключение к S3
-        client = Minio("s3.timeweb.cloud",
+        client = Minio(config['config']['s3-url'],
                        access_key=os.getenv("S3_ACCESS"),
                        secret_key=os.getenv("S3_SECRET"),
                        secure=True)
-        bucket_name = os.getenv("BUCKET_NAME")
+        bucket_name = config['config']['s3-bucket-name']
         try:
             # Итерируем по списку объектов в rivals_i
             objects = client.list_objects(bucket_name, prefix=prefix, recursive=True)
@@ -91,8 +91,9 @@ def download_today_files(prefix):
                     # Если время загрузки попадает в time_ranges
                     if is_file_time_valid_for_task(base_file_name, time_ranges):
                         print(f"downloading file: {file_name}")
-                        client.fget_object(bucket_name=bucket_name, object_name=file_name,
-                                           file_path=testdir.__str__() + "/" + base_file_name)
+                        client.fget_object(bucket_name=bucket_name,
+                                           object_name=file_name,
+                                           file_path=str(testdir) + "/" + base_file_name)
                     else:
                         print(f"got file not valid for time_range: {base_file_name}, skipping...")
         except S3Error as err:
@@ -105,14 +106,18 @@ def download_today_files(prefix):
 def upload_converted_files(prefix):
     # Получаем папку из которой должны браться файлы
     parent_dir = Path(__file__).parent.parent.parent
+    # Путь до конфига
+    cfg_path = parent_dir / 'cfg' / 'config.yaml'
+    with open(cfg_path, 'r') as file:
+        config = yaml.safe_load(file)
     converted_dir = parent_dir / "converted"
     combined_dir = parent_dir / "combined"
     # Подключение к S3
-    client = Minio("s3.timeweb.cloud",
+    client = Minio(config['config']['s3-url'],
                    access_key=os.getenv("S3_ACCESS"),
                    secret_key=os.getenv("S3_SECRET"),
                    secure=True)
-    bucket_name = os.getenv("BUCKET_NAME")
+    bucket_name = config['config']['s3-bucket-name']
     try:
         # Выгружаем конвертированные файлы
         for root, _, files in os.walk(converted_dir):
