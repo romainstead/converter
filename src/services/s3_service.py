@@ -1,3 +1,5 @@
+import logging
+
 from minio import Minio, S3Error
 from datetime import datetime, UTC, time
 from pathlib import Path
@@ -6,6 +8,15 @@ import yaml
 import os
 
 load_dotenv()
+
+
+def load_config(config_path: Path) -> dict:
+    try:
+        with open(config_path, "r") as file:
+            config = yaml.safe_load(file)
+            return config
+    except Exception as e:
+        logging.error(f"error loading config file: {e}")
 
 
 # Получаем время в формате datetime.time из наименования файла
@@ -51,12 +62,10 @@ def is_file_time_valid_for_task(filename, time_ranges):
 def download_today_files(prefix):
     # Получаем папку в которую необходимо сохранять неконвертированные файлы
     parent_dir = Path(__file__).parent.parent.parent
-    testdir = parent_dir / "need_convert"
-
+    need_convert = parent_dir / "need_convert"
     # Чтение конфига
     cfg_path = parent_dir / 'cfg' / 'config.yaml'
-    with open(cfg_path, 'r') as file:
-        config = yaml.safe_load(file)
+    config = load_config(cfg_path)
     # Проходим по таскам из конфига
     tasks = config['scheduler']['tasks']
     for task in tasks:
@@ -93,23 +102,19 @@ def download_today_files(prefix):
                         print(f"downloading file: {file_name}")
                         client.fget_object(bucket_name=bucket_name,
                                            object_name=file_name,
-                                           file_path=str(testdir) + "/" + base_file_name)
+                                           file_path=str(need_convert) + "/" + base_file_name)
                     else:
                         print(f"got file not valid for time_range: {base_file_name}, skipping...")
         except S3Error as err:
             print(err)
 
 
-# Префикс, чтобы в S3 появилась "папка"
-# Например converted/utair/...;
-# combined/utair/...
-def upload_converted_files(prefix):
+def upload_converted_files(prefix: str) -> None:
     # Получаем папку из которой должны браться файлы
     parent_dir = Path(__file__).parent.parent.parent
     # Путь до конфига
     cfg_path = parent_dir / 'cfg' / 'config.yaml'
-    with open(cfg_path, 'r') as file:
-        config = yaml.safe_load(file)
+    config = load_config(cfg_path)
     converted_dir = parent_dir / "converted"
     combined_dir = parent_dir / "combined"
     # Подключение к S3
@@ -125,7 +130,8 @@ def upload_converted_files(prefix):
                 local_path = os.path.join(root, file)
                 # Формируем имя файла для отгрузки в S3:
                 # Пример: bucket_name/27731d10-saina-rivals/converted/prices_Y7_2025-03-05-13-00_MOW_AER.csv
-                remote_path_converted = "converted/" + f'{prefix}' + os.path.relpath(local_path, converted_dir).replace("\\", "/")
+                remote_path_converted = "converted/" + f'{prefix}' + os.path.relpath(local_path, converted_dir).replace(
+                    "\\", "/")
                 print(f"uploading file: {remote_path_converted}")
                 client.fput_object(bucket_name=bucket_name, object_name=remote_path_converted, file_path=local_path)
 
@@ -135,7 +141,8 @@ def upload_converted_files(prefix):
                 local_path = os.path.join(root, file)
                 # Формируем имя файла для отгрузки в S3:
                 # Пример: bucket_name/27731d10-saina-rivals/combined/combined_prices_Y7_2025-03-05.csv
-                remote_path_combined = "combined/" + f'{prefix}' + os.path.relpath(local_path, combined_dir).replace("\\", "/")
+                remote_path_combined = "combined/" + f'{prefix}' + os.path.relpath(local_path, combined_dir).replace(
+                    "\\", "/")
                 print(f"uploading file: {remote_path_combined}")
                 client.fput_object(bucket_name=bucket_name, object_name=remote_path_combined, file_path=local_path)
     except S3Error as err:

@@ -55,18 +55,19 @@ def get_today_currency_rates_cbr():
     parent_dir = Path(__file__).parent.parent.parent
     cfg_path = parent_dir / 'cfg' / 'config.yaml'
     config = load_config(cfg_path)
-    # Адрес по которому будем обращаться к API
-    url = f'{config["config"]["CBR_URL"]}'
+    # Чтение необходимых данных из конфига
+    s3_url = config['config']['S3_URL']
+    bucket_name = config['config']['S3_BUCKET_NAME']
+    prefix = config['config']['S3_CURRENCY_PREFIX']
+    url = config["config"]["CBR_URL"]
     today = datetime.now(UTC).date()
     data = get_currency_data(url)
     source_file = parent_dir / f"CBR_currency_rates_{today}.txt"
     save_to_json(data, source_file)
-    client = Minio(config['config']['S3_URL'],
+    client = Minio(s3_url,
                    access_key=os.getenv("S3_ACCESS"),
                    secret_key=os.getenv("S3_SECRET"),
                    secure=True)
-    bucket_name = config['config']['S3_BUCKET_NAME']
-    prefix = config['config']['S3_CURRENCY_PREFIX']
     s3_object_name = f"{prefix}/CBR_currency_rates_{today}.txt"
     upload_to_s3(client, bucket_name, s3_object_name, str(source_file))
 

@@ -1,16 +1,17 @@
 import asyncio
-from pathlib import Path
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import yaml
 from datetime import datetime, UTC
-from src.services.currency_service import get_today_currency_rates_cbr
-from src.services.telegram_service import send_all_converted_files
-from src.services.telegram_service import send_all_combined_files
-from src.services.converters_service import convert_csv_files_utair
-from src.services.converters_service import convert_csv_files_s7
+from pathlib import Path
+
+import yaml
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 from src.services.combine_service import combine_converted_files
+from src.services.converters_service import convert_csv_files_s7
+from src.services.converters_service import convert_csv_files_utair
 from src.services.s3_service import download_today_files
 from src.services.s3_service import upload_converted_files
+from src.services.telegram_service import send_all_combined_files
+from src.services.telegram_service import send_all_converted_files
 
 # TODO: ЕДИНАЯ ФУНКЦИЯ ЗАГРУЗКИ КОНФИГА. ЧТОБ КАЖДЫЙ РАЗ НЕ БЫЛО WITH OPEN: YAML.SAFE_LOAD
 
@@ -24,11 +25,13 @@ async def process_task(task_config):
     # Загрузка файлов из папок Игоря и Айтала
     for prefix in config['config']['S3_FETCH_PREFIXES']:
         download_today_files(prefix)
+    # Получаем тип конвертации валют из конфига
+    currency_type = task_config.get("currency_type")
     # Получаем тип конвертера из конфига
     convert_type = task_config.get("convert_type")
     # Если тип конвертера присутствует есть в словаре, то вызываем его
     if convert_type in CONVERTERS:
-        CONVERTERS[convert_type]()
+        CONVERTERS[convert_type](currency_type)
     # Комбинируем файлы по перевозчикам
     combine_converted_files()
     # Загружаем конвертированные и комбинированные файлы
@@ -50,9 +53,6 @@ CONVERTERS = {
     "test": convert_csv_files_utair,
 }
 
-CURRENCY_TYPES = {
-    "CBR": get_today_currency_rates_cbr,
-}
 
 # Чтение конфига
 with open(cfg_path, 'r') as file:
