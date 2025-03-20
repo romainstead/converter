@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime, UTC
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from src.services.combine_service import combine_converted_files
 from src.services.converters_service import convert_csv_files_s7
 from src.services.converters_service import convert_csv_files_utair
+from src.services.currency_service import get_today_currency_rates_cbr
 from src.services.s3_service import download_today_files
 from src.services.s3_service import upload_converted_files
 from src.services.telegram_service import send_all_combined_files
@@ -20,8 +22,9 @@ cfg_path = parent_dir / 'cfg' / 'config.yaml'
 
 
 async def process_task(task_config):
+    get_today_currency_rates_cbr()
     now = datetime.now(UTC)
-    print(f"Задача {task_config['name']} начата в {now}")
+    logging.info(f"Задача {task_config['name']} начата в {now}")
     # Загрузка файлов из папок Игоря и Айтала
     for prefix in config['config']['S3_FETCH_PREFIXES']:
         download_today_files(prefix)
@@ -35,7 +38,7 @@ async def process_task(task_config):
     # Комбинируем файлы по перевозчикам
     combine_converted_files()
     # Загружаем конвертированные и комбинированные файлы
-    # Префикс у файлов будет по нейму из конфига
+    # Префикс у файлов будет по нейму задачи из конфига
     upload_converted_files(task_config['name'] + "/")
     for dest in config['config']['SEND_TO']:
         # Выгрузка в телеграм

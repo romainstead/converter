@@ -3,6 +3,8 @@ import pandas as pd
 from pathlib import Path
 
 
+# TODO: функция, подтягивающая актуальный курс нужного ЦБ (РФ или РБ) из S3 и (видимо) пересчёт столбцов в евро
+
 def convert_csv_files_utair():
     # Папки для работы
     parent_dir = Path(__file__).parent.parent.parent
