@@ -110,9 +110,9 @@ def download_today_files(prefix):
                     # Если время загрузки попадает в time_ranges
                     if is_file_time_valid_for_task(base_file_name, time_ranges):
                         logger.info(f"downloading file: {file_name}")
-                        # client.fget_object(bucket_name=bucket_name,
-                        #                    object_name=file_name,
-                        #                    file_path=str(need_convert) + "/" + base_file_name)
+                        client.fget_object(bucket_name=bucket_name,
+                                           object_name=file_name,
+                                           file_path=str(need_convert) + "/" + base_file_name)
                     else:
                         logger.warning(f"got file not valid for time_range: {base_file_name}, skipping...")
         except S3Error as err:
@@ -140,12 +140,12 @@ def upload_converted_files(prefix: str) -> None:
         # Выгружаем конвертированные файлы
         for filename in glob.glob(str(converted_dir / pattern_converted)):
             s3_object_name = f"converted/{prefix + Path(filename).stem}.csv"
-            # client.fput_object(bucket_name, s3_object_name, filename)
+            client.fput_object(bucket_name, s3_object_name, filename)
         logger.info("successfully uploaded converted files")
         # Выгружаем комбинированные файлы по компаниям
         for filename in glob.glob(str(combined_dir / pattern_combined)):
             s3_object_name = f"combined/{prefix + Path(filename).stem}.csv"
-            # client.fput_object(bucket_name, s3_object_name, filename)
+            client.fput_object(bucket_name, s3_object_name, filename)
         logger.info("successfully uploaded combined files")
     except S3Error as err:
         logger.error(f"error uploading to S3: {err}")
