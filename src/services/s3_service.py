@@ -1,3 +1,4 @@
+import glob
 import logging
 
 from minio import Minio, S3Error
@@ -114,9 +115,9 @@ def upload_converted_files(prefix: str) -> None:
     parent_dir = Path(__file__).parent.parent.parent
     # Путь до конфига
     cfg_path = parent_dir / 'cfg' / 'config.yaml'
-    config = load_config(cfg_path)
     converted_dir = parent_dir / "converted"
     combined_dir = parent_dir / "combined"
+    config = load_config(cfg_path)
     # Подключение к S3
     client = Minio(config['config']['S3_URL'],
                    access_key=os.getenv("S3_ACCESS"),
@@ -124,29 +125,17 @@ def upload_converted_files(prefix: str) -> None:
                    secure=True)
     bucket_name = config['config']['S3_BUCKET_NAME']
     try:
+        today = datetime.now(UTC).date()
+        pattern_converted = f'prices_??_{today.year}-{today.month:02d}-{today.day:02d}*.csv'
+        pattern_combined = f'combined_prices_??_{today.year}-{today.month:02d}-{today.day:02d}*.csv'
         # Выгружаем конвертированные файлы
-        for root, _, files in os.walk(converted_dir):
-            for file in files:
-                local_path = os.path.join(root, file)
-                # Формируем имя файла для отгрузки в S3:
-                # Пример: bucket_name/27731d10-saina-rivals/converted/prices_Y7_2025-03-05-13-00_MOW_AER.csv
-                remote_path_converted = "converted/" + f'{prefix}' + os.path.relpath(local_path, converted_dir).replace(
-                    "\\", "/")
-                print(f"uploading file: {remote_path_converted}")
-                client.fput_object(bucket_name=bucket_name, object_name=remote_path_converted, file_path=local_path)
+        for filename in glob.glob(str(converted_dir / pattern_converted)):
+            s3_object_name = f"converted/{prefix + Path(filename).stem}.csv"
+            client.fput_object(bucket_name, s3_object_name, filename)
 
         # Выгружаем комбинированные файлы по компаниям
-        for root, _, files in os.walk(combined_dir):
-            for file in files:
-                local_path = os.path.join(root, file)
-                # Формируем имя файла для отгрузки в S3:
-                # Пример: bucket_name/27731d10-saina-rivals/combined/combined_prices_Y7_2025-03-05.csv
-                remote_path_combined = "combined/" + f'{prefix}' + os.path.relpath(local_path, combined_dir).replace(
-                    "\\", "/")
-                print(f"uploading file: {remote_path_combined}")
-                client.fput_object(bucket_name=bucket_name, object_name=remote_path_combined, file_path=local_path)
+        for filename in glob.glob(str(combined_dir / pattern_combined)):
+            s3_object_name = f"combined/{prefix + Path(filename).stem}.csv"
+            client.fput_object(bucket_name, s3_object_name, filename)
     except S3Error as err:
         print(err)
-
-# if __name__ == "__main__":
-#     upload_converted_files("rivals/")
