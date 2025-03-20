@@ -30,22 +30,21 @@ def attach_files(msg, directory):
             msg.attach(part)
 
 
-def send_files_smtp(directory, subject, config):
+def send_files_smtp(directory, subject, cfg):
     today = datetime.now(UTC).date()
     BODY = ""
     SUBJECT = f"{subject}_{today}"
-    SENDER = config['SENDER_EMAIL']
-    RECEIVER = config['RECEIVER_EMAIL']
+    SENDER = cfg['SENDER_EMAIL']
+    RECEIVER = cfg['RECEIVER_EMAIL']
     PASSWORD = os.getenv("SMTP_PASSWORD")
-    PORT = config['SMTP_PORT']
-    SERVER = config['SMTP_SERVER']
+    PORT = cfg['SMTP_PORT']
+    SERVER = cfg['SMTP_SERVER']
 
     msg = MIMEMultipart()
     msg["From"] = SENDER
     msg["To"] = RECEIVER
     msg["Subject"] = SUBJECT
     msg.attach(MIMEText(BODY, "plain"))
-    files = [f for f in os.listdir(converted_dir)]
     attach_files(msg, directory)
     try:
         with smtplib.SMTP(SERVER, PORT) as server:

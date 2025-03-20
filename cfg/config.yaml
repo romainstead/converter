@@ -4,6 +4,7 @@ config:
   SENDER_EMAIL: "rao6@tpu.ru"
   RECEIVER_EMAIL: "ave50@tpu.ru"
   CURRENCY_URL: https://v6.exchangerate-api.com/v6
+  CBR_URL: http://www.cbr.ru/scripts/XML_daily.asp
   S3_URL: s3.timeweb.cloud
   S3_BUCKET_NAME: 27731d10-saina-rivals
   S3_CURRENCY_PREFIX: currency
