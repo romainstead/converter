@@ -24,6 +24,7 @@ dp = Dispatcher()
 
 
 async def send_all_converted_files(chat_id):
+    # TODO: Отправка файлов одним сообщением, а не по одному
     today = datetime.now(UTC)
     await bot.send_message(chat_id=chat_id, text="Отправка конвертированных файлов...", request_timeout=999999)
     pattern = f'prices_??_{today.year}-{today.month:02d}-{today.day:02d}*.csv'
@@ -34,6 +35,7 @@ async def send_all_converted_files(chat_id):
 
 
 async def send_all_combined_files(chat_id):
+    # TODO: Отправка файлов одним сообщением, а не по одному
     today = datetime.now(UTC)
     await bot.send_message(chat_id=chat_id, text="Отправка комбинированных файлов...", request_timeout=999999)
     pattern = f'combined_prices_??_{today.year}-{today.month:02d}-{today.day:02d}.csv'

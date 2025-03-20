@@ -2,13 +2,18 @@ config:
   SMTP_SERVER: letter.tpu.ru
   SMTP_PORT: 587
   SENDER_EMAIL: "rao6@tpu.ru"
+  RECEIVER_EMAIL: "ave50@tpu.ru"
   CURRENCY_URL: https://v6.exchangerate-api.com/v6
   S3_URL: s3.timeweb.cloud
   S3_BUCKET_NAME: 27731d10-saina-rivals
   S3_CURRENCY_PREFIX: currency
+  S3_FETCH_PREFIXES:
+    - "rivals"
+    - "rivals_i/"
   SEND_TO:
     - telegram-user-id-565809356
 scheduler:
+  type: "CBR"
   currency: "EUR"
   tasks:
     - name: "utair"

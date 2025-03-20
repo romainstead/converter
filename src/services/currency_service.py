@@ -46,6 +46,5 @@ def get_today_rates():
     except S3Error as err:
         print(err)
 
-
 if __name__ == "__main__":
     get_today_rates()

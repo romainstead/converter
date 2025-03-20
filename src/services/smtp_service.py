@@ -1,28 +1,63 @@
+import yaml
+from pathlib import Path
+import dotenv
+import os
 import smtplib
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from datetime import datetime, UTC
 
-# TODO: весь функционал отгрузки через SMTP
+parent_dir = Path(__file__).parent.parent.parent
+converted_dir = parent_dir / 'converted'
+combined_dir = parent_dir / 'combined'
+cfg_path = parent_dir / 'cfg' / 'config.yaml'
 
-def send_message():
-    # Настройки
-    sender = "xxxx"
-    recipient = "xxxx"
-    password = "xxxx"  # Для Gmail лучше использовать App Password
-    # Создаем сообщение
-    msg = MIMEText("тест смтп.")
-    msg['Subject'] = "Тестовое письмо"
-    msg['From'] = sender
-    msg['To'] = recipient
+dotenv.load_dotenv()
 
-    # Подключение к серверу и отправка
+
+def load_config(cfg_path):
+    with open(cfg_path, 'r') as cfg:
+        return yaml.safe_load(cfg)['config']
+
+
+def attach_files(msg, directory):
+    for file in os.listdir(directory):
+        filepath = os.path.join(directory, file)
+        with open(filepath, "rb") as f:
+            part = MIMEApplication(f.read())
+            part["Content-Disposition"] = f'attachment; filename="{file}"'
+            msg.attach(part)
+
+
+def send_files_smtp(directory, subject, config):
+    today = datetime.now(UTC).date()
+    BODY = ""
+    SUBJECT = f"{subject}_{today}"
+    SENDER = config['SENDER_EMAIL']
+    RECEIVER = config['RECEIVER_EMAIL']
+    PASSWORD = os.getenv("SMTP_PASSWORD")
+    PORT = config['SMTP_PORT']
+    SERVER = config['SMTP_SERVER']
+
+    msg = MIMEMultipart()
+    msg["From"] = SENDER
+    msg["To"] = RECEIVER
+    msg["Subject"] = SUBJECT
+    msg.attach(MIMEText(BODY, "plain"))
+    files = [f for f in os.listdir(converted_dir)]
+    attach_files(msg, directory)
     try:
-        with smtplib.SMTP("letter.tpu.ru", 587) as server:
-            server.starttls()  # Включаем шифрование
-            server.login(sender, password)
-            server.send_message(msg)
-        print("Письмо успешно отправлено!")
+        with smtplib.SMTP(SERVER, PORT) as server:
+            server.starttls()
+            server.login(SENDER, PASSWORD)
+            server.sendmail(SENDER, RECEIVER, msg.as_string())
     except Exception as e:
-        print(f"Ошибка: {e}")
+        print(e)
 
-# if __name__ == '__main__':
-#     send_message()
+
+config = load_config(cfg_path)
+
+if __name__ == "__main__":
+    send_files_smtp(converted_dir, "converted_files", config)
+    send_files_smtp(combined_dir, "combined_files", config)

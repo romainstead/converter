@@ -11,6 +11,8 @@ from src.services.combine_service import combine_converted_files
 from src.services.s3_service import download_today_files
 from src.services.s3_service import upload_converted_files
 
+# TODO: ЕДИНАЯ ФУНКЦИЯ ЗАГРУЗКИ КОНФИГА. ЧТОБ КАЖДЫЙ РАЗ НЕ БЫЛО WITH OPEN: YAML.SAFE_LOAD
+
 parent_dir = Path(__file__).parent.parent.parent
 cfg_path = parent_dir / 'cfg' / 'config.yaml'
 
@@ -19,6 +21,7 @@ async def process_task(task_config):
     now = datetime.now(UTC)
     print(f"Задача {task_config['name']} начата в {now}")
     # Загрузка файлов из папок Игоря и Айтала
+    # TODO: УБРАТЬ ХАРДКОД ПРЕФИКСОВ
     download_today_files("rivals/")
     download_today_files("rivals_i/")
     # Получаем тип конвертера из конфига
