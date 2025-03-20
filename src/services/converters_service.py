@@ -2,16 +2,8 @@ import os
 import pandas as pd
 from pathlib import Path
 
-from src.services.currency_service import get_today_currency_rates_cbr
 
-CURRENCY_TYPES = {
-    "CBR": get_today_currency_rates_cbr,
-}
-
-
-def convert_csv_files_utair(currency_type: str):
-    if currency_type in CURRENCY_TYPES:
-        ...
+def convert_csv_files_utair():
     # Папки для работы
     parent_dir = Path(__file__).parent.parent.parent
     input_folder = parent_dir / 'need_convert'

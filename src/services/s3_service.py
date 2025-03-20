@@ -81,7 +81,7 @@ def download_today_files(prefix):
                        secure=True)
         bucket_name = config['config']['S3_BUCKET_NAME']
         try:
-            # Итерируем по списку объектов в rivals_i
+            # Итерируем по списку объектов
             objects = client.list_objects(bucket_name, prefix=prefix, recursive=True)
             for obj in objects:
                 # Получаем имя файла
@@ -89,7 +89,7 @@ def download_today_files(prefix):
                 # Отсекаем префикс файла
                 base_file_name = os.path.basename(file_name)
                 if not base_file_name.startswith('prices'):
-                    # print(f"got incorrect file name: {file_name}, skipping...")
+                    logging.info(f"got incorrect filename: {base_file_name}, skipping...")
                     continue
                 # Сплитим имя файла по _
                 parts = base_file_name.split("_")
@@ -105,7 +105,7 @@ def download_today_files(prefix):
                                            object_name=file_name,
                                            file_path=str(need_convert) + "/" + base_file_name)
                     else:
-                        print(f"got file not valid for time_range: {base_file_name}, skipping...")
+                        logging.info(f"got file not valid for time_range: {base_file_name}, skipping...")
         except S3Error as err:
             print(err)
 
@@ -138,4 +138,5 @@ def upload_converted_files(prefix: str) -> None:
             s3_object_name = f"combined/{prefix + Path(filename).stem}.csv"
             client.fput_object(bucket_name, s3_object_name, filename)
     except S3Error as err:
-        print(err)
+        logging.error(f"error uploading to S3: {err}")
+        raise
