@@ -10,6 +10,15 @@ import os
 
 load_dotenv()
 
+# Логирование
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+    datefmt="%Y-%m-%dT%H:%M:%S %Z",
+)
+
+logger = logging.getLogger(__name__)
+logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
 def load_config(config_path: Path) -> dict:
     try:
@@ -17,7 +26,7 @@ def load_config(config_path: Path) -> dict:
             config = yaml.safe_load(file)
             return config
     except Exception as e:
-        logging.error(f"error loading config file: {e}")
+        logger.error(f"error loading config file: {e}")
 
 
 # Получаем время в формате datetime.time из наименования файла
@@ -89,7 +98,7 @@ def download_today_files(prefix):
                 # Отсекаем префикс файла
                 base_file_name = os.path.basename(file_name)
                 if not base_file_name.startswith('prices'):
-                    logging.info(f"got incorrect filename: {base_file_name}, skipping...")
+                    logger.info(f"got incorrect filename: {base_file_name}, skipping...")
                     continue
                 # Сплитим имя файла по _
                 parts = base_file_name.split("_")
@@ -100,12 +109,12 @@ def download_today_files(prefix):
                 if year_month_day == today:
                     # Если время загрузки попадает в time_ranges
                     if is_file_time_valid_for_task(base_file_name, time_ranges):
-                        print(f"downloading file: {file_name}")
-                        client.fget_object(bucket_name=bucket_name,
-                                           object_name=file_name,
-                                           file_path=str(need_convert) + "/" + base_file_name)
+                        logger.info(f"downloading file: {file_name}")
+                        # client.fget_object(bucket_name=bucket_name,
+                        #                    object_name=file_name,
+                        #                    file_path=str(need_convert) + "/" + base_file_name)
                     else:
-                        logging.info(f"got file not valid for time_range: {base_file_name}, skipping...")
+                        logger.warning(f"got file not valid for time_range: {base_file_name}, skipping...")
         except S3Error as err:
             print(err)
 
@@ -131,12 +140,13 @@ def upload_converted_files(prefix: str) -> None:
         # Выгружаем конвертированные файлы
         for filename in glob.glob(str(converted_dir / pattern_converted)):
             s3_object_name = f"converted/{prefix + Path(filename).stem}.csv"
-            client.fput_object(bucket_name, s3_object_name, filename)
-
+            # client.fput_object(bucket_name, s3_object_name, filename)
+        logger.info("successfully uploaded converted files")
         # Выгружаем комбинированные файлы по компаниям
         for filename in glob.glob(str(combined_dir / pattern_combined)):
             s3_object_name = f"combined/{prefix + Path(filename).stem}.csv"
-            client.fput_object(bucket_name, s3_object_name, filename)
+            # client.fput_object(bucket_name, s3_object_name, filename)
+        logger.info("successfully uploaded combined files")
     except S3Error as err:
-        logging.error(f"error uploading to S3: {err}")
+        logger.error(f"error uploading to S3: {err}")
         raise

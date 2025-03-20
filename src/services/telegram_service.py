@@ -16,7 +16,14 @@ converted_dir = parent_dir / 'converted'
 combined_dir = parent_dir / 'combined'
 
 # Логирование
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+    datefmt="%Y-%m-%dT%H:%M:%S %Z",
+)
+
+logger = logging.getLogger(__name__)
+logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
 # Создаём бота
 bot = Bot(token=os.getenv("BOT_TOKEN"))

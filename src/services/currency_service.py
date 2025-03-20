@@ -13,6 +13,16 @@ import yaml
 # Загружаем переменные окружения
 dotenv.load_dotenv()
 
+# Логирование
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+    datefmt="%Y-%m-%dT%H:%M:%S %Z",
+)
+
+logger = logging.getLogger(__name__)
+logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
+
 
 def load_config(config_path: Path) -> dict:
     try:
@@ -20,7 +30,7 @@ def load_config(config_path: Path) -> dict:
             config = yaml.safe_load(file)
             return config
     except Exception as e:
-        logging.error(f"error loading config file: {e}")
+        logger.error(f"error loading config file: {e}")
 
 
 def get_currency_data(url: str) -> dict:
@@ -28,7 +38,7 @@ def get_currency_data(url: str) -> dict:
         response = requests.get(url)
         return xmltodict.parse(response.text)
     except requests.RequestException as e:
-        logging.error(f"API request error: {e}")
+        logger.error(f"API request error: {e}")
         raise
 
 
@@ -38,15 +48,15 @@ def save_to_json(data: dict, file_path: Path) -> None:
         with open(file_path, "w", encoding='utf-8') as file:
             file.write(json_data)
     except Exception as e:
-        logging.error(f"error saving to JSON: {e}")
+        logger.error(f"error saving to JSON: {e}")
 
 
 def upload_to_s3(client: Minio, bucket_name: str, object_name: str, file_path: str) -> None:
     try:
         client.fput_object(bucket_name, object_name, file_path)
-        logging.info(f"uploaded file to S3: {object_name}")
+        logger.info(f"uploaded file to S3: {object_name}")
     except S3Error as e:
-        logging.error(f"error uploading to S3: {e}")
+        logger.error(f"error uploading to S3: {e}")
         raise
 
 

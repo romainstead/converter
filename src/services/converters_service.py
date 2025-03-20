@@ -1,10 +1,21 @@
+import logging
 import os
 import pandas as pd
 from pathlib import Path
 
 
 # TODO: функция, подтягивающая актуальный курс нужного ЦБ (РФ или РБ) из S3 и (видимо) пересчёт столбцов в евро
+# Логирование
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+    datefmt="%Y-%m-%dT%H:%M:%S %Z",
+)
 
+logger = logging.getLogger(__name__)
+logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
+
+logger = logging.getLogger(__name__)
 def convert_csv_files_utair():
     # Папки для работы
     parent_dir = Path(__file__).parent.parent.parent
@@ -34,7 +45,6 @@ def convert_csv_files_utair():
 
             # Извлекаем код перевозчика из имени файла
             cxr = filename.split('_')[1]
-            print(f"Извлеченный cxr для {filename}: {cxr}")  # Отладочный вывод
 
             # Создаем новый DataFrame с нужными колонками
             new_df = pd.DataFrame(columns=output_columns)
@@ -102,16 +112,16 @@ def convert_csv_files_utair():
             new_df['homebound_travel_stop_over'] = ''
             new_df['home_booking_class'] = ''
 
-            # Проверяем cxr перед сохранением
-            print(f"Первые 5 строк new_df['cxr'] перед сохранением: {new_df['cxr'].head().tolist()}")
+            # # Проверяем cxr перед сохранением
+            # logger.info(f"first 5 new_df['cxr'] перед сохранением: {new_df['cxr'].head().tolist()}")
 
             # Сохраняем результат в выходной файл
             output_path = os.path.join(output_folder, filename)
             new_df.to_csv(output_path, index=False, encoding='utf-8')
 
-            print(f"Конвертирован файл: {Path(filename).stem}")
+            logger.info(f"file is converted: {Path(filename).stem}")
 
-    print("Конвертация завершена!")
+    logger.info("file conversion is end")
 
 
 def convert_csv_files_s7():

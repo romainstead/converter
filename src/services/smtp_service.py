@@ -1,3 +1,5 @@
+import logging
+
 import yaml
 from pathlib import Path
 import dotenv
@@ -14,7 +16,15 @@ combined_dir = parent_dir / 'combined'
 cfg_path = parent_dir / 'cfg' / 'config.yaml'
 
 dotenv.load_dotenv()
+# Логирование
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+    datefmt="%Y-%m-%dT%H:%M:%S %Z",
+)
 
+logger = logging.getLogger(__name__)
+logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
 def load_config(cfg_path):
     with open(cfg_path, 'r') as cfg:

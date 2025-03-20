@@ -20,11 +20,21 @@ from src.services.telegram_service import send_all_converted_files
 parent_dir = Path(__file__).parent.parent.parent
 cfg_path = parent_dir / 'cfg' / 'config.yaml'
 
+# Логирование
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+    datefmt="%Y-%m-%dT%H:%M:%S %Z",
+)
+
+logger = logging.getLogger(__name__)
+logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
+
 
 async def process_task(task_config):
     get_today_currency_rates_cbr()
     now = datetime.now(UTC)
-    logging.info(f"Задача {task_config['name']} начата в {now}")
+    logger.info(f"Задача {task_config['name']} начата в {now}")
     # Загрузка файлов из папок Игоря и Айтала
     for prefix in config['config']['S3_FETCH_PREFIXES']:
         download_today_files(prefix)
@@ -34,7 +44,7 @@ async def process_task(task_config):
     convert_type = task_config.get("convert_type")
     # Если тип конвертера присутствует есть в словаре, то вызываем его
     if convert_type in CONVERTERS:
-        CONVERTERS[convert_type](currency_type)
+        CONVERTERS[convert_type]()
     # Комбинируем файлы по перевозчикам
     combine_converted_files()
     # Загружаем конвертированные и комбинированные файлы
@@ -46,7 +56,7 @@ async def process_task(task_config):
             chat_id = dest.split('-')[-1]
             await send_all_converted_files(chat_id)
             await send_all_combined_files(chat_id)
-    print(f"Задача {task_config['name']} завершена в {now}")
+    logger.info(f"task {task_config['name']} ended")
 
 
 # Словарь конвертеров
@@ -55,7 +65,6 @@ CONVERTERS = {
     "s7": convert_csv_files_s7,
     "test": convert_csv_files_utair,
 }
-
 
 # Чтение конфига
 with open(cfg_path, 'r') as file:
@@ -92,6 +101,6 @@ async def schedule_tasks():
 # Запускаем планировщик
 async def start_scheduler():
     scheduler.start()
-    print("Планировщик запущен...")
+    logger.info("scheduler start")
     await schedule_tasks()
     await asyncio.Event().wait()

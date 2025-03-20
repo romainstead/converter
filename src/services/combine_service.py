@@ -1,8 +1,20 @@
+import logging
+
 import pandas as pd
 import os
 from glob import glob
 from pathlib import Path
 from datetime import datetime, UTC
+
+# Логирование
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+    datefmt="%Y-%m-%dT%H:%M:%S %Z",
+)
+
+logger = logging.getLogger(__name__)
+logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
 
 def combine_converted_files():
@@ -45,7 +57,7 @@ def combine_converted_files():
 
         # Сохраняем объединенный датафрейм в CSV
         combined_df.to_csv(output_path, index=False)
-        print(f"Создан файл для компании {company}: {Path(output_path).stem}")
+        logger.info(f"created file for company {company}: {Path(output_path).stem}")
 
 # if __name__ == "__main__":
 #     convert_final()
