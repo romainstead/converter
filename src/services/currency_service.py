@@ -1,12 +1,9 @@
 import json
-
 import requests
 import os
 import dotenv
 from pathlib import Path
-
 import xmltodict
-import yaml
 from datetime import datetime, UTC
 from minio import Minio, S3Error
 import yaml
@@ -15,7 +12,7 @@ import yaml
 dotenv.load_dotenv()
 
 
-def get_today_rates_cbr():
+def get_today_currency_rates_cbr():
     # Загрузка конфига
     parent_dir = Path(__file__).parent.parent.parent
     cfg_path = parent_dir / 'cfg' / 'config.yaml'
@@ -28,9 +25,11 @@ def get_today_rates_cbr():
     response = requests.get(url)
     # Получаем ответ
     data = xmltodict.parse(response.text)
+    # Удаление названий валют, потому что они на кириллице
     currency_data = data['ValCurs']['Valute']
     for currency in currency_data:
         del currency['Name']
+    # Переводим словарь в JSON
     json_data = json.dumps(data, indent=4, ensure_ascii=False)
     source_file = f"{parent_dir}\\CBR_currency_rates_{today}.txt"
     with open(source_file, "w", encoding='utf-8') as file:
@@ -49,5 +48,5 @@ def get_today_rates_cbr():
         print(err)
 
 
-if __name__ == "__main__":
-    get_today_rates()
+def get_today_currency_rates_otherBank():
+    ...
