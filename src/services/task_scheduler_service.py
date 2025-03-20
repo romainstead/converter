@@ -3,6 +3,7 @@ from pathlib import Path
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import yaml
 from datetime import datetime, UTC
+from src.services.currency_service import get_today_currency_rates_cbr
 from src.services.telegram_service import send_all_converted_files
 from src.services.telegram_service import send_all_combined_files
 from src.services.converters_service import convert_csv_files_utair
@@ -47,6 +48,10 @@ CONVERTERS = {
     "utair": convert_csv_files_utair,
     "s7": convert_csv_files_s7,
     "test": convert_csv_files_utair,
+}
+
+CURRENCY_TYPES = {
+    "CBR": get_today_currency_rates_cbr,
 }
 
 # Чтение конфига

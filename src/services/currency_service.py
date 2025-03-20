@@ -1,4 +1,6 @@
 import json
+import logging
+
 import requests
 import os
 import dotenv
@@ -12,40 +14,65 @@ import yaml
 dotenv.load_dotenv()
 
 
+def load_config(config_path: Path) -> dict:
+    try:
+        with open(config_path, "r") as file:
+            config = yaml.safe_load(file)
+            return config
+    except Exception as e:
+        logging.error(f"error loading config file: {e}")
+
+
+def get_currency_data(url: str) -> dict:
+    try:
+        response = requests.get(url)
+        return xmltodict.parse(response.text)
+    except requests.RequestException as e:
+        logging.error(f"API request error: {e}")
+        raise
+
+
+def save_to_json(data: dict, file_path: Path) -> None:
+    try:
+        json_data = json.dumps(data, indent=4, ensure_ascii=False)
+        with open(file_path, "w", encoding='utf-8') as file:
+            file.write(json_data)
+    except Exception as e:
+        logging.error(f"error saving to JSON: {e}")
+
+
+def upload_to_s3(client: Minio, bucket_name: str, object_name: str, file_path: str) -> None:
+    try:
+        client.fput_object(bucket_name, object_name, file_path)
+        logging.info(f"uploaded file to S3: {object_name}")
+    except S3Error as e:
+        logging.error(f"error uploading to S3: {e}")
+        raise
+
+
 def get_today_currency_rates_cbr():
     # Загрузка конфига
     parent_dir = Path(__file__).parent.parent.parent
     cfg_path = parent_dir / 'cfg' / 'config.yaml'
-    with open(cfg_path, 'r') as file:
-        config = yaml.safe_load(file)
+    config = load_config(cfg_path)
     # Адрес по которому будем обращаться к API
     url = f'{config["config"]["CBR_URL"]}'
     today = datetime.now(UTC).date()
-    # Делаем запрос по URL
-    response = requests.get(url)
-    # Получаем ответ
-    data = xmltodict.parse(response.text)
-    # Удаление названий валют, потому что они на кириллице
-    currency_data = data['ValCurs']['Valute']
-    for currency in currency_data:
-        del currency['Name']
-    # Переводим словарь в JSON
-    json_data = json.dumps(data, indent=4, ensure_ascii=False)
-    source_file = f"{parent_dir}\\CBR_currency_rates_{today}.txt"
-    with open(source_file, "w", encoding='utf-8') as file:
-        file.write(str(json_data))
-    # Подключение к S3
+    data = get_currency_data(url)
+    source_file = parent_dir / f"CBR_currency_rates_{today}.txt"
+    save_to_json(data, source_file)
     client = Minio(config['config']['S3_URL'],
                    access_key=os.getenv("S3_ACCESS"),
                    secret_key=os.getenv("S3_SECRET"),
                    secure=True)
     bucket_name = config['config']['S3_BUCKET_NAME']
-    # Загружаем файл в S3
-    try:
-        prefix = config['config']['S3_CURRENCY_PREFIX']
-        client.fput_object(bucket_name, f"{prefix}/CBR_currency_rates_{today}.txt", source_file)
-    except S3Error as err:
-        print(err)
+    prefix = config['config']['S3_CURRENCY_PREFIX']
+    s3_object_name = f"{prefix}/CBR_currency_rates_{today}.txt"
+    upload_to_s3(client, bucket_name, s3_object_name, str(source_file))
+
+
+if __name__ == "__main__":
+    get_today_currency_rates_cbr()
 
 
 def get_today_currency_rates_otherBank():
