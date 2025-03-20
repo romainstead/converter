@@ -9,17 +9,17 @@ config:
   S3_BUCKET_NAME: 27731d10-saina-rivals
   S3_CURRENCY_PREFIX: currency
   S3_FETCH_PREFIXES:
-    - "rivals"
+    - "rivals/"
     - "rivals_i/"
   SEND_TO:
     - telegram-user-id-565809356
 scheduler:
-  type: "CBR"
   currency: "EUR"
   tasks:
     - name: "utair"
       enabled: true
-      type: "utair"
+      currency_type: "CBR"
+      convert_type: "utair"
       convert_times:  # Список времен для конверсии
         - "default"
         - "3:01-utc"

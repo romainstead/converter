@@ -21,11 +21,10 @@ async def process_task(task_config):
     now = datetime.now(UTC)
     print(f"Задача {task_config['name']} начата в {now}")
     # Загрузка файлов из папок Игоря и Айтала
-    # TODO: УБРАТЬ ХАРДКОД ПРЕФИКСОВ
-    download_today_files("rivals/")
-    download_today_files("rivals_i/")
+    for prefix in config['config']['S3_FETCH_PREFIXES']:
+        download_today_files(prefix)
     # Получаем тип конвертера из конфига
-    convert_type = task_config.get("type")
+    convert_type = task_config.get("convert_type")
     # Если тип конвертера присутствует есть в словаре, то вызываем его
     if convert_type in CONVERTERS:
         CONVERTERS[convert_type]()
