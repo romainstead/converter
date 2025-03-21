@@ -87,7 +87,6 @@ def get_today_currency_rates(currency_type: str) -> None:
         case "NBRB":
             url = config['config']['NBRB_URL']
             data = get_currency_data_json(url)
-            print(data)
         case _:
             logger.error("no matching type of currency conversion found")
             raise
