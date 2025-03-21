@@ -87,8 +87,10 @@ def get_today_currency_rates(currency_type: str) -> None:
         case "NBRB":
             url = config['config']['NBRB_URL']
             data = get_currency_data_json(url)
+            print(data)
         case _:
-            return
+            logger.error("no matching type of currency conversion found")
+            raise
     source_file = parent_dir / f"{currency_type}_currency_rates_{today}.txt"
     save_to_json(data, source_file)
     client = Minio(s3_url,
@@ -96,4 +98,8 @@ def get_today_currency_rates(currency_type: str) -> None:
                    secret_key=os.getenv("S3_SECRET"),
                    secure=True)
     s3_object_name = f"{prefix}/{currency_type}_currency_rates_{today}.txt"
-    upload_to_s3(client, bucket_name, s3_object_name, str(source_file))
+    upload_to_s3(client, bucket_name, s3_object_name, str(source_file)) # UNCOMMENT LATER
+
+
+# if __name__ == "__main__":
+#     get_today_currency_rates("NBRB")
