@@ -33,10 +33,20 @@ def load_config(config_path: Path) -> dict:
         logger.error(f"error loading config file: {e}")
 
 
-def get_currency_data(url: str) -> dict:
+def get_currency_data_xml(url: str) -> dict:
     try:
         response = requests.get(url)
         return xmltodict.parse(response.text)
+    except requests.RequestException as e:
+        logger.error(f"API request error: {e}")
+        raise
+
+
+def get_currency_data_json(url: str) -> dict:
+    try:
+        response = requests.get(url)
+        data = response.json()
+        return data
     except requests.RequestException as e:
         logger.error(f"API request error: {e}")
         raise
@@ -60,7 +70,8 @@ def upload_to_s3(client: Minio, bucket_name: str, object_name: str, file_path: s
         raise
 
 
-def get_today_currency_rates_cbr():
+def get_today_currency_rates(currency_type: str) -> None:
+    today = datetime.now(UTC).date()
     # Загрузка конфига
     parent_dir = Path(__file__).parent.parent.parent
     cfg_path = parent_dir / 'cfg' / 'config.yaml'
@@ -69,22 +80,20 @@ def get_today_currency_rates_cbr():
     s3_url = config['config']['S3_URL']
     bucket_name = config['config']['S3_BUCKET_NAME']
     prefix = config['config']['S3_CURRENCY_PREFIX']
-    url = config["config"]["CBR_URL"]
-    today = datetime.now(UTC).date()
-    data = get_currency_data(url)
-    source_file = parent_dir / f"CBR_currency_rates_{today}.txt"
+    match currency_type:
+        case "CBR":
+            url = config['config']['CBR_URL']
+            data = get_currency_data_xml(url)
+        case "NBRB":
+            url = config['config']['NBRB_URL']
+            data = get_currency_data_json(url)
+        case _:
+            return
+    source_file = parent_dir / f"{currency_type}_currency_rates_{today}.txt"
     save_to_json(data, source_file)
     client = Minio(s3_url,
                    access_key=os.getenv("S3_ACCESS"),
                    secret_key=os.getenv("S3_SECRET"),
                    secure=True)
-    s3_object_name = f"{prefix}/CBR_currency_rates_{today}.txt"
+    s3_object_name = f"{prefix}/{currency_type}_currency_rates_{today}.txt"
     upload_to_s3(client, bucket_name, s3_object_name, str(source_file))
-
-
-if __name__ == "__main__":
-    get_today_currency_rates_cbr()
-
-
-def get_today_currency_rates_otherBank():
-    ...

@@ -5,6 +5,7 @@ config:
   RECEIVER_EMAIL: "ave50@tpu.ru"
   CURRENCY_URL: https://v6.exchangerate-api.com/v6
   CBR_URL: http://www.cbr.ru/scripts/XML_daily.asp
+  NBRB_URL: https://api.nbrb.by/exrates/rates?periodicity=0
   S3_URL: s3.timeweb.cloud
   S3_BUCKET_NAME: 27731d10-saina-rivals
   S3_CURRENCY_PREFIX: currency
@@ -18,7 +19,7 @@ scheduler:
   tasks:
     - name: "utair"
       enabled: true
-      currency_type: "CBR"
+      currency_type: "NBRB"
       convert_type: "utair"
       convert_times:  # Список времен для конверсии
         - "default"

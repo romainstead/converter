@@ -9,7 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from src.services.combine_service import combine_converted_files
 from src.services.converters_service import convert_csv_files_s7
 from src.services.converters_service import convert_csv_files_utair
-from src.services.currency_service import get_today_currency_rates_cbr
+from src.services.currency_service import get_today_currency_rates
 from src.services.s3_service import download_today_files
 from src.services.s3_service import upload_converted_files
 from src.services.telegram_service import send_all_combined_files
@@ -32,7 +32,7 @@ logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
 
 async def process_task(task_config):
-    get_today_currency_rates_cbr()
+    get_today_currency_rates(task_config['currency_type'])
     now = datetime.now(UTC)
     logger.info(f"Задача {task_config['name']} начата в {now}")
     # Загрузка файлов из папок Игоря и Айтала
