@@ -18,7 +18,7 @@ scheduler:
   currency: "EUR"
   tasks:
     - name: "utair"
-      enabled: true
+      enabled: false
       currency_type: "NBRB"
       convert_type: "utair"
       convert_times:  # Список времен для конверсии
@@ -31,3 +31,19 @@ scheduler:
       air_companies:
         - "WZ"
         - "U6"
+currency-fetcher:
+  tasks:
+    - name: "NBRB"
+      enabled: true
+      currency_type: "NBRB"
+      fetch_times:
+        - "default"
+        - "00:00-utc"
+        - "12:00-utc"
+    - name: "CBR"
+      enabled: true
+      currency_type: "CBR"
+      fetch_times:
+        - "default"
+        - "00:00-utc"
+        - "12:00-utc"

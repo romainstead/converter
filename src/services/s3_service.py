@@ -98,7 +98,7 @@ def download_today_files(prefix):
                 # Отсекаем префикс файла
                 base_file_name = os.path.basename(file_name)
                 if not base_file_name.startswith('prices'):
-                    logger.info(f"got incorrect filename: {base_file_name}, skipping...")
+                    # logger.info(f"got incorrect filename: {base_file_name}, skipping...")
                     continue
                 # Сплитим имя файла по _
                 parts = base_file_name.split("_")

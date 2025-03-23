@@ -1,10 +1,10 @@
+from datetime import datetime, UTC
 import logging
 import os
 import pandas as pd
 from pathlib import Path
 
 
-# TODO: функция, подтягивающая актуальный курс нужного ЦБ (РФ или РБ) из S3 и (видимо) пересчёт столбцов в евро
 # Логирование
 logging.basicConfig(
     level=logging.INFO,
@@ -15,7 +15,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
-logger = logging.getLogger(__name__)
+
 def convert_csv_files_utair():
     # Папки для работы
     parent_dir = Path(__file__).parent.parent.parent

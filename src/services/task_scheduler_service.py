@@ -32,7 +32,7 @@ logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
 
 async def process_task(task_config):
-    get_today_currency_rates(task_config['currency_type'])
+    # get_today_currency_rates(task_config['currency_type'])
     now = datetime.now(UTC)
     logger.info(f"Задача {task_config['name']} начата в {now}")
     # Загрузка файлов из папок Игоря и Айтала
@@ -76,6 +76,25 @@ scheduler = AsyncIOScheduler(timezone="UTC")
 
 # Обработка задач
 async def schedule_tasks():
+    for task in config['currency-fetcher']['tasks']:
+        if not task.get('enabled', False):
+            continue
+        for fetch_time in task['fetch_times']:
+            if fetch_time == "default":
+                asyncio.create_task(get_today_currency_rates(task['currency_type']))
+            else:
+                time_str = fetch_time.split('-utc')[0]  # Извлекаем "HH:MM"
+                hour, minute = map(int, time_str.split(':'))
+                # Добавляем задачу в планировщик
+                scheduler.add_job(
+                    process_task,
+                    'cron',
+                    hour=hour,
+                    minute=minute,
+                    args=[task],  # Передаем конфиг задачи в функцию
+                    timezone="UTC"
+                )
+
     for task in config['scheduler']['tasks']:
         if not task.get('enabled', False):  # Пропускаем отключенные задачи
             continue
