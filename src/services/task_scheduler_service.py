@@ -32,32 +32,29 @@ logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
 
 async def process_task(task_config):
-    # get_today_currency_rates(task_config['currency_type'])
-    now = datetime.now(UTC)
-    logger.info(f"Задача {task_config['name']} начата в {now}")
-    # Загрузка файлов из папок Игоря и Айтала
-    for prefix in config['config']['S3_FETCH_PREFIXES']:
-        download_today_files(prefix)
-    # Получаем тип конвертации валют из конфига
-    currency_type = task_config.get("currency_type")
-    # Получаем тип конвертера из конфига
-    convert_type = task_config.get("convert_type")
-    # Если тип конвертера присутствует есть в словаре, то вызываем его
-    if convert_type in CONVERTERS:
-        CONVERTERS[convert_type]()
-    # Комбинируем файлы по перевозчикам
-    combine_converted_files()
-    # Загружаем конвертированные и комбинированные файлы
-    # Префикс у файлов будет по нейму задачи из конфига
-    upload_converted_files(task_config['name'] + "/")
-    for dest in config['config']['SEND_TO']:
-        # Выгрузка в телеграм
-        if dest.startswith('telegram-user-id'):
-            chat_id = dest.split('-')[-1]
-            await send_all_converted_files(chat_id)
-            await send_all_combined_files(chat_id)
-    logger.info(f"task {task_config['name']} ended")
-
+    match task_config['type']:
+        case "file_conversion":
+            now = datetime.now(UTC)
+            logger.info(f"Задача {task_config['name']} начата в {now}")
+            for prefix in config['config']['S3_FETCH_PREFIXES']:
+                download_today_files(prefix, task_config)
+            currency_type = task_config.get("currency_type")
+            convert_type = task_config.get("convert_type")
+            if convert_type in CONVERTERS:
+                CONVERTERS[convert_type]()
+            combine_converted_files()
+            upload_converted_files(task_config['name'] + "/")
+            for dest in config['config']['SEND_TO']:
+                if dest.startswith('telegram-user-id'):
+                    chat_id = dest.split('-')[-1]
+                    await send_all_converted_files(chat_id)
+                    await send_all_combined_files(chat_id)
+            logger.info(f"task {task_config['name']} ended")
+        case "currency_fetching":
+            await get_today_currency_rates(task_config['currency_type'])
+        case _:
+            logger.error("unknown task type from config")
+            raise ValueError("unknown task type from config")
 
 # Словарь конвертеров
 CONVERTERS = {
@@ -76,35 +73,16 @@ scheduler = AsyncIOScheduler(timezone="UTC")
 
 # Обработка задач
 async def schedule_tasks():
-    for task in config['currency-fetcher']['tasks']:
-        if not task.get('enabled', False):
-            continue
-        for fetch_time in task['fetch_times']:
-            if fetch_time == "default":
-                asyncio.create_task(get_today_currency_rates(task['currency_type']))
-            else:
-                time_str = fetch_time.split('-utc')[0]  # Извлекаем "HH:MM"
-                hour, minute = map(int, time_str.split(':'))
-                # Добавляем задачу в планировщик
-                scheduler.add_job(
-                    process_task,
-                    'cron',
-                    hour=hour,
-                    minute=minute,
-                    args=[task],  # Передаем конфиг задачи в функцию
-                    timezone="UTC"
-                )
-
     for task in config['scheduler']['tasks']:
         if not task.get('enabled', False):  # Пропускаем отключенные задачи
             continue
-        # Для каждого времени в convert_times добавляем задачу
-        for convert_time in task['convert_times']:
+        # Для каждого времени в trigger_times добавляем задачу
+        for trigger_time in task['trigger_times']:
             # default = начать сейчас же
-            if convert_time == "default":
+            if trigger_time == "default":
                 asyncio.create_task(process_task(task))
             else:
-                time_str = convert_time.split('-utc')[0]  # Извлекаем "HH:MM"
+                time_str = trigger_time.split('-utc')[0]  # Извлекаем "HH:MM"
                 hour, minute = map(int, time_str.split(':'))
                 # Добавляем задачу в планировщик
                 scheduler.add_job(

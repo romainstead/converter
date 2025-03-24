@@ -20,6 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
+
 def load_config(config_path: Path) -> dict:
     try:
         with open(config_path, "r") as file:
@@ -69,54 +70,51 @@ def is_file_time_valid_for_task(filename, time_ranges):
     return False
 
 
-def download_today_files(prefix):
+def download_today_files(prefix: str, task_config: dict) -> None:
     # Получаем папку в которую необходимо сохранять неконвертированные файлы
     parent_dir = Path(__file__).parent.parent.parent
     need_convert = parent_dir / "need_convert"
     # Чтение конфига
     cfg_path = parent_dir / 'cfg' / 'config.yaml'
     config = load_config(cfg_path)
-    # Проходим по таскам из конфига
-    tasks = config['scheduler']['tasks']
-    for task in tasks:
-        # Извлекаем тайм рейнджи из конфига
-        time_ranges = task['time_ranges']
-        # Сегодняшний день
-        today = datetime.now(UTC).strftime("%Y-%m-%d")
-        # Подключение к S3
-        client = Minio(config['config']['S3_URL'],
-                       access_key=os.getenv("S3_ACCESS"),
-                       secret_key=os.getenv("S3_SECRET"),
-                       secure=True)
-        bucket_name = config['config']['S3_BUCKET_NAME']
-        try:
-            # Итерируем по списку объектов
-            objects = client.list_objects(bucket_name, prefix=prefix, recursive=True)
-            for obj in objects:
-                # Получаем имя файла
-                file_name = obj.object_name
-                # Отсекаем префикс файла
-                base_file_name = os.path.basename(file_name)
-                if not base_file_name.startswith('prices'):
-                    # logger.info(f"got incorrect filename: {base_file_name}, skipping...")
-                    continue
-                # Сплитим имя файла по _
-                parts = base_file_name.split("_")
-                # Получаем дату загрузки
-                upload_date = parts[2]
-                year_month_day = "-".join(upload_date.split("-")[:3])
-                # Если дата загрузки совпадает с текущей датой
-                if year_month_day == today:
-                    # Если время загрузки попадает в time_ranges
-                    if is_file_time_valid_for_task(base_file_name, time_ranges):
-                        logger.info(f"downloading file: {file_name}")
-                        client.fget_object(bucket_name=bucket_name,
-                                           object_name=file_name,
-                                           file_path=str(need_convert) + "/" + base_file_name)
-                    else:
-                        logger.warning(f"got file not valid for time_range: {base_file_name}, skipping...")
-        except S3Error as err:
-            print(err)
+    # Извлекаем тайм рейнджи из конфига задачи
+    time_ranges = task_config['time_ranges']
+    # Сегодняшний день
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    # Подключение к S3
+    client = Minio(config['config']['S3_URL'],
+                   access_key=os.getenv("S3_ACCESS"),
+                   secret_key=os.getenv("S3_SECRET"),
+                   secure=True)
+    bucket_name = config['config']['S3_BUCKET_NAME']
+    try:
+        # Итерируем по списку объектов
+        objects = client.list_objects(bucket_name, prefix=prefix, recursive=True)
+        for obj in objects:
+            # Получаем имя файла
+            file_name = obj.object_name
+            # Отсекаем префикс файла
+            base_file_name = os.path.basename(file_name)
+            if not base_file_name.startswith('prices'):
+                # logger.info(f"got incorrect filename: {base_file_name}, skipping...")
+                continue
+            # Сплитим имя файла по _
+            parts = base_file_name.split("_")
+            # Получаем дату загрузки
+            upload_date = parts[2]
+            year_month_day = "-".join(upload_date.split("-")[:3])
+            # Если дата загрузки совпадает с текущей датой
+            if year_month_day == today:
+                # Если время загрузки попадает в time_ranges
+                if is_file_time_valid_for_task(base_file_name, time_ranges):
+                    logger.info(f"downloading file: {file_name}")
+                    client.fget_object(bucket_name=bucket_name,
+                                       object_name=file_name,
+                                       file_path=str(need_convert) + "/" + base_file_name)
+                else:
+                    logger.warning(f"got file not valid for time_range: {base_file_name}, skipping...")
+    except S3Error as err:
+        print(err)
 
 
 def upload_converted_files(prefix: str) -> None:

@@ -4,7 +4,7 @@ config:
   SENDER_EMAIL: "rao6@tpu.ru"
   RECEIVER_EMAIL: "ave50@tpu.ru"
   CURRENCY_URL: https://v6.exchangerate-api.com/v6
-  CBR_URL: http://www.cbr.ru/scripts/XML_daily.asp
+  CBR_URL: https://www.cbr.ru/scripts/XML_daily.asp
   NBRB_URL: https://api.nbrb.by/exrates/rates?periodicity=0
   S3_URL: s3.timeweb.cloud
   S3_BUCKET_NAME: 27731d10-saina-rivals
@@ -18,11 +18,12 @@ scheduler:
   currency: "EUR"
   tasks:
     - name: "utair"
-      enabled: false
+      enabled: true
+      type: file_conversion # Конвертировать файлы
       currency_type: "NBRB"
-      convert_type: "utair"
-      convert_times:  # Список времен для конверсии
-        - "default"
+      convert_type: "utair" # Тип конвертации
+      trigger_times:  # Список времен для конверсии
+        - "default" # Сейчас
         - "3:01-utc"
         - "12:45-utc"
       time_ranges:   # Список диапазонов времени
@@ -31,19 +32,19 @@ scheduler:
       air_companies:
         - "WZ"
         - "U6"
-currency-fetcher:
-  tasks:
-    - name: "NBRB"
+    - name: "fetch_NBRB"
       enabled: true
-      currency_type: "NBRB"
-      fetch_times:
+      type: "currency_fetching" # Получить курс валют
+      currency_type: "NBRB" # Получение курсов из НБ РБ
+      trigger_times:
         - "default"
         - "00:00-utc"
         - "12:00-utc"
-    - name: "CBR"
+    - name: "fetch_CBR"
       enabled: true
-      currency_type: "CBR"
-      fetch_times:
+      type: "currency_fetching"
+      currency_type: "CBR" # Получение курсов из ЦБ РФ
+      trigger_times:
         - "default"
         - "00:00-utc"
         - "12:00-utc"
