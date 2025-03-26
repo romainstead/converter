@@ -16,10 +16,6 @@ logger = logging.getLogger(__name__)
 logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
 
-# TODO: !!! ПЕРЕСЧЁТ СТОЛБЦОВ С ДЕНЬГАМИ В НЕОБХОДИМУЮ ВАЛЮТУ !!!
-# TODO: !!! ПЕРЕСЧЁТ СТОЛБЦОВ С ДЕНЬГАМИ В НЕОБХОДИМУЮ ВАЛЮТУ !!!
-# TODO: !!! ПЕРЕСЧЁТ СТОЛБЦОВ С ДЕНЬГАМИ В НЕОБХОДИМУЮ ВАЛЮТУ !!!
-
 def search_for_currency(currency_list: list, key: str, need_currency: str):
     return [element for element in currency_list if element[f'{key}'] == need_currency]
 
@@ -45,18 +41,25 @@ def convert_csv_files_utair(currency_type: str):
         # Убираем ненужные данные
         clean_currency_data = currency_data['ValCurs']['Valute']
         # Ищем данные по нужной валюте
-        need_cur = search_for_currency(clean_currency_data, 'CharCode', need_currency)
+        need_cur = search_for_currency(clean_currency_data, config['config']['CBR_CURRENCY_SEARCH_KEY'], need_currency)
         # Если такая валюта найдена, то всё ок
         if any(need_cur):
             # ЦБ РФ пишет десятичные значения через запятую
             # Заменим её на точку и переведём во float
-            exchange_rate_str = need_cur[0]['VunitRate'].replace(',', '.')
+            exchange_rate_str = need_cur[0][config['config']['CBR_MAIN_KEY']].replace(',', '.')
             exchange_rate = float(exchange_rate_str)
         # Если не найдена, то exchange_rate = 1
         else:
             exchange_rate = 1
             logger.warning("needed currency not found")
-    print(exchange_rate)
+    elif currency_type == 'NBRB':
+        need_cur = search_for_currency(currency_data, config['config']['NBRB_CURRENCY_SEARCH_KEY'], need_currency)
+        if any(need_cur):
+            exchange_rate = need_cur[0]['Cur_OfficialRate'] / need_cur[0]['Cur_Scale']
+        else:
+            exchange_rate = 1
+            logger.warning("needed currency not found")
+
     # Создаем выходную папку, если ее нет
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)

@@ -151,7 +151,7 @@ def upload_converted_files(prefix: str) -> None:
         raise
 
 
-def download_currency_from_s3(prefix: str, currency_type: str) -> dict:
+def download_currency_from_s3(prefix: str, currency_type: str):
     today = datetime.now(UTC).strftime("%Y-%m-%d")
     # Получаем папку в которую необходимо сохранять неконвертированные файлы
     parent_dir = Path(__file__).parent.parent.parent
@@ -175,7 +175,3 @@ def download_currency_from_s3(prefix: str, currency_type: str) -> dict:
     except S3Error as e:
         logger.error(f"error fetching currency from S3: {e}")
         raise
-
-
-if __name__ == "__main__":
-    download_currency_from_s3("currency", "CBR")
