@@ -3,7 +3,7 @@ import logging
 import os
 import pandas as pd
 from pathlib import Path
-
+from src.services.s3_service import download_currency_from_s3, load_config
 
 # Логирование
 logging.basicConfig(
@@ -16,12 +16,47 @@ logger = logging.getLogger(__name__)
 logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
 
-def convert_csv_files_utair():
+# TODO: !!! ПЕРЕСЧЁТ СТОЛБЦОВ С ДЕНЬГАМИ В НЕОБХОДИМУЮ ВАЛЮТУ !!!
+# TODO: !!! ПЕРЕСЧЁТ СТОЛБЦОВ С ДЕНЬГАМИ В НЕОБХОДИМУЮ ВАЛЮТУ !!!
+# TODO: !!! ПЕРЕСЧЁТ СТОЛБЦОВ С ДЕНЬГАМИ В НЕОБХОДИМУЮ ВАЛЮТУ !!!
+
+def search_for_currency(currency_list: list, key: str, need_currency: str):
+    return [element for element in currency_list if element[f'{key}'] == need_currency]
+
+
+def convert_csv_files_utair(currency_type: str):
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
     # Папки для работы
     parent_dir = Path(__file__).parent.parent.parent
     input_folder = parent_dir / 'need_convert'
     output_folder = parent_dir / 'converted'
+    cfg_path = parent_dir / 'cfg' / "config.yaml"
 
+    # Загружаем конфиг
+    config = load_config(cfg_path)
+    # Читаем из конфига нужную для конвертации валюту
+    need_currency = config['scheduler']['currency']
+    # Загружаем актуальный курс
+    # TODO: ПРОВЕРИТЬ, НЕТ ЛИ ХАРДКОДА В download_currency_from_s3()
+    currency_data = download_currency_from_s3(config['config']['S3_CURRENCY_PREFIX'], currency_type)
+    exchange_rate = 1
+    # Если курс российского рубля
+    if currency_type == 'CBR':
+        # Убираем ненужные данные
+        clean_currency_data = currency_data['ValCurs']['Valute']
+        # Ищем данные по нужной валюте
+        need_cur = search_for_currency(clean_currency_data, 'CharCode', need_currency)
+        # Если такая валюта найдена, то всё ок
+        if any(need_cur):
+            # ЦБ РФ пишет десятичные значения через запятую
+            # Заменим её на точку и переведём во float
+            exchange_rate_str = need_cur[0]['VunitRate'].replace(',', '.')
+            exchange_rate = float(exchange_rate_str)
+        # Если не найдена, то exchange_rate = 1
+        else:
+            exchange_rate = 1
+            logger.warning("needed currency not found")
+    print(exchange_rate)
     # Создаем выходную папку, если ее нет
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -69,20 +104,33 @@ def convert_csv_files_utair():
 
             # Учитываем оба варианта price_exc/price_ex и добавляем .0
             if 'price_exc' in df.columns:
-                new_df['amt'] = pd.to_numeric(df['price_exc'], errors='coerce').map(
-                    lambda x: f"{x:.1f}" if pd.notnull(x) else '')
+                # Переводим столбец в числовой тип
+                numeric_amt = pd.to_numeric(df['price_exc'], errors='coerce')
+                # Делим на курс обмена
+                numeric_amt = numeric_amt / exchange_rate
+                # Переводим в строки
+                new_df['amt'] = numeric_amt.map(lambda x: f"{x:.1f}" if pd.notnull(x) else '')
                 new_df['inclusive'] = new_df['amt']
+
             elif 'price_ex' in df.columns:
-                new_df['amt'] = pd.to_numeric(df['price_ex'], errors='coerce').map(
-                    lambda x: f"{x:.1f}" if pd.notnull(x) else '')
+                # Переводим столбец в числовой тип
+                numeric_amt = pd.to_numeric(df['price_ex'], errors='coerce')
+                # Делим на курс обмена
+                numeric_amt = numeric_amt / exchange_rate
+                # Переводим в строку
+                new_df['amt'] = numeric_amt.map(lambda x: f"{x:.1f}" if pd.notnull(x) else '')
                 new_df['inclusive'] = new_df['amt']
             else:
                 new_df['amt'] = ''
                 new_df['inclusive'] = ''
-
-            new_df['tax'] = pd.to_numeric(df.get('tax', ''), errors='coerce').map(
-                lambda x: f"{x:.1f}" if pd.notnull(x) else '')
-            new_df['cur'] = df.get('currency', '')
+            # Переводим в числовой формат
+            numeric_tax = pd.to_numeric(df.get('tax', ''), errors='coerce')
+            # Делим на курс обмена
+            numeric_tax = numeric_tax / exchange_rate
+            # Переводим в строку
+            new_df['tax'] = numeric_tax.map(lambda x: f"{x:.1f}" if pd.notnull(x) else '')
+            # Заменяем название курса на тот, в который конвертировали
+            new_df['cur'] = need_currency
             new_df['fty'] = 'OW'
 
             # Форматирование shapshot в DD.MM.YYYY HH:MM

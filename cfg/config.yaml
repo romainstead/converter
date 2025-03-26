@@ -20,7 +20,7 @@ scheduler:
     - name: "utair"
       enabled: true
       type: file_conversion # Конвертировать файлы
-      currency_type: "NBRB"
+      currency_type: "CBR"
       convert_type: "utair" # Тип конвертации
       trigger_times:  # Список времен для конверсии
         - "default" # Сейчас
@@ -32,6 +32,7 @@ scheduler:
       air_companies:
         - "WZ"
         - "U6"
+
     - name: "fetch_NBRB"
       enabled: true
       type: "currency_fetching" # Получить курс валют
@@ -40,6 +41,7 @@ scheduler:
         - "default"
         - "00:00-utc"
         - "12:00-utc"
+
     - name: "fetch_CBR"
       enabled: true
       type: "currency_fetching"

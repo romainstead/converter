@@ -1,4 +1,5 @@
 import glob
+import json
 import logging
 
 from minio import Minio, S3Error
@@ -148,3 +149,33 @@ def upload_converted_files(prefix: str) -> None:
     except S3Error as err:
         logger.error(f"error uploading to S3: {err}")
         raise
+
+
+def download_currency_from_s3(prefix: str, currency_type: str) -> dict:
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    # Получаем папку в которую необходимо сохранять неконвертированные файлы
+    parent_dir = Path(__file__).parent.parent.parent
+    need_convert = parent_dir / "need_convert"
+    # Чтение конфига
+    cfg_path = parent_dir / 'cfg' / 'config.yaml'
+    config = load_config(cfg_path)
+    client = Minio(config['config']['S3_URL'],
+                   access_key=os.getenv("S3_ACCESS"),
+                   secret_key=os.getenv("S3_SECRET"),
+                   secure=True)
+    bucket_name = config['config']['S3_BUCKET_NAME']
+    try:
+        response = client.get_object(bucket_name=bucket_name,
+                                     object_name=f"{prefix}/{currency_type}_currency_rates_{today}.txt")
+        content = response.read().decode('utf-8')
+        data = json.loads(content)
+        response.close()
+        response.release_conn()
+        return data
+    except S3Error as e:
+        logger.error(f"error fetching currency from S3: {e}")
+        raise
+
+
+if __name__ == "__main__":
+    download_currency_from_s3("currency", "CBR")

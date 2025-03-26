@@ -115,5 +115,3 @@ async def get_today_currency_rates(currency_type: str) -> None:
     os.remove(source_file)
     logger.info(f"success currency fetching from {currency_type}")
 
-# if __name__ == "__main__":
-#     get_today_currency_rates("NBRB")

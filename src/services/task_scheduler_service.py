@@ -41,14 +41,14 @@ async def process_task(task_config):
             currency_type = task_config.get("currency_type")
             convert_type = task_config.get("convert_type")
             if convert_type in CONVERTERS:
-                CONVERTERS[convert_type]()
+                CONVERTERS[convert_type](currency_type)
             combine_converted_files()
             upload_converted_files(task_config['name'] + "/")
-            for dest in config['config']['SEND_TO']:
-                if dest.startswith('telegram-user-id'):
-                    chat_id = dest.split('-')[-1]
-                    await send_all_converted_files(chat_id)
-                    await send_all_combined_files(chat_id)
+            # for dest in config['config']['SEND_TO']:
+            #     if dest.startswith('telegram-user-id'):
+            #         chat_id = dest.split('-')[-1]
+            #         await send_all_converted_files(chat_id)
+            #         await send_all_combined_files(chat_id)
             logger.info(f"task {task_config['name']} ended")
         case "currency_fetching":
             await get_today_currency_rates(task_config['currency_type'])
