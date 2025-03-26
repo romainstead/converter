@@ -29,23 +29,29 @@ def convert_csv_files_utair(currency_type: str):
 
     # Загружаем конфиг
     config = load_config(cfg_path)
+
     # Читаем из конфига нужную для конвертации валюту
     need_currency = config['scheduler']['currency']
+
     # Загружаем актуальный курс
     currency_data = download_currency_from_s3(config['config']['S3_CURRENCY_PREFIX'], currency_type)
     exchange_rate = 1
+
     # Если курс российского рубля
     if currency_type == 'CBR':
         # Убираем ненужные данные
         clean_currency_data = currency_data['ValCurs']['Valute']
+
         # Ищем данные по нужной валюте
         need_cur = search_for_currency(clean_currency_data, config['config']['CBR_CURRENCY_SEARCH_KEY'], need_currency)
+
         # Если такая валюта найдена, то всё ок
         if any(need_cur):
             # ЦБ РФ пишет десятичные значения через запятую
             # Заменим её на точку и переведём во float
             exchange_rate_str = need_cur[0][config['config']['CBR_MAIN_KEY']].replace(',', '.')
             exchange_rate = float(exchange_rate_str)
+
         # Если не найдена, то exchange_rate = 1
         else:
             exchange_rate = 1
@@ -73,7 +79,6 @@ def convert_csv_files_utair(currency_type: str):
     ]
 
     # Проходим по всем файлам в папке need_convert
-    # pattern = f'prices_??_{today.year}-{today.month:02d}-{today.day:02d}*.csv'
     for filename in os.listdir(input_folder):
         if filename.endswith('.csv'):
             # Читаем входной CSV файл
@@ -108,8 +113,10 @@ def convert_csv_files_utair(currency_type: str):
             if 'price_exc' in df.columns:
                 # Переводим столбец в числовой тип
                 numeric_amt = pd.to_numeric(df['price_exc'], errors='coerce')
+
                 # Делим на курс обмена
                 numeric_amt = numeric_amt / exchange_rate
+
                 # Переводим в строки
                 new_df['amt'] = numeric_amt.map(lambda x: f"{x:.1f}" if pd.notnull(x) else '')
                 new_df['inclusive'] = new_df['amt']
@@ -117,8 +124,10 @@ def convert_csv_files_utair(currency_type: str):
             elif 'price_ex' in df.columns:
                 # Переводим столбец в числовой тип
                 numeric_amt = pd.to_numeric(df['price_ex'], errors='coerce')
+
                 # Делим на курс обмена
                 numeric_amt = numeric_amt / exchange_rate
+
                 # Переводим в строку
                 new_df['amt'] = numeric_amt.map(lambda x: f"{x:.1f}" if pd.notnull(x) else '')
                 new_df['inclusive'] = new_df['amt']
@@ -127,12 +136,21 @@ def convert_csv_files_utair(currency_type: str):
                 new_df['inclusive'] = ''
             # Переводим в числовой формат
             numeric_tax = pd.to_numeric(df.get('tax', ''), errors='coerce')
+
             # Делим на курс обмена
             numeric_tax = numeric_tax / exchange_rate
+
             # Переводим в строку
             new_df['tax'] = numeric_tax.map(lambda x: f"{x:.1f}" if pd.notnull(x) else '')
+
             # Заменяем название курса на тот, в который конвертировали
-            new_df['cur'] = need_currency
+            # Если exchange_rate так и остался 1, то конвертация валют не произошла
+            # И нужно об этом предупредить
+            if exchange_rate == 1:
+                new_df['cur'] = df.get('currency', '')
+                logger.warning(f"currency conversion did not happen, currency: {need_currency}")
+            else:
+                new_df['cur'] = need_currency
             new_df['fty'] = 'OW'
 
             # Форматирование shapshot в DD.MM.YYYY HH:MM
