@@ -15,7 +15,6 @@ from src.services.s3_service import upload_converted_files
 from src.services.telegram_service import send_all_combined_files
 from src.services.telegram_service import send_all_converted_files
 
-# TODO: ЕДИНАЯ ФУНКЦИЯ ЗАГРУЗКИ КОНФИГА. ЧТОБ КАЖДЫЙ РАЗ НЕ БЫЛО WITH OPEN: YAML.SAFE_LOAD
 
 parent_dir = Path(__file__).parent.parent.parent
 cfg_path = parent_dir / 'cfg' / 'config.yaml'
@@ -32,10 +31,10 @@ logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
 
 async def process_task(task_config):
+    now = datetime.now(UTC)
     match task_config['type']:
         case "file_conversion":
-            now = datetime.now(UTC)
-            logger.info(f"Задача {task_config['name']} начата в {now}")
+            logger.info(f"task {task_config['name']} has began")
             for prefix in config['config']['S3_FETCH_PREFIXES']:
                 download_today_files(prefix, task_config)
             currency_type = task_config.get("currency_type")
@@ -44,14 +43,16 @@ async def process_task(task_config):
                 CONVERTERS[convert_type](currency_type)
             combine_converted_files()
             upload_converted_files(task_config['name'] + "/")
-            # for dest in config['config']['SEND_TO']:
-            #     if dest.startswith('telegram-user-id'):
-            #         chat_id = dest.split('-')[-1]
-            #         await send_all_converted_files(chat_id)
-            #         await send_all_combined_files(chat_id)
+            for dest in config['config']['SEND_TO']:
+                if dest.startswith('telegram-user-id'):
+                    chat_id = dest.split('-')[-1]
+                    await send_all_converted_files(chat_id)
+                    await send_all_combined_files(chat_id)
             logger.info(f"task {task_config['name']} ended")
         case "currency_fetching":
+            logger.info(f"task {task_config['name']} began")
             await get_today_currency_rates(task_config['currency_type'])
+            logger.info(f"task {task_config['name']} end")
         case _:
             logger.error("unknown task type from config")
             raise ValueError("unknown task type from config")

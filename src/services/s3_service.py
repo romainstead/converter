@@ -155,7 +155,6 @@ def download_currency_from_s3(prefix: str, currency_type: str):
     today = datetime.now(UTC).strftime("%Y-%m-%d")
     # Получаем папку в которую необходимо сохранять неконвертированные файлы
     parent_dir = Path(__file__).parent.parent.parent
-    need_convert = parent_dir / "need_convert"
     # Чтение конфига
     cfg_path = parent_dir / 'cfg' / 'config.yaml'
     config = load_config(cfg_path)

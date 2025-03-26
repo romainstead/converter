@@ -26,6 +26,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logging.Formatter.converter = lambda *args: datetime.now(UTC).timetuple()
 
+
 def load_config(cfg_path):
     with open(cfg_path, 'r') as cfg:
         return yaml.safe_load(cfg)['config']

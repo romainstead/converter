@@ -2,7 +2,6 @@ import json
 import logging
 
 import aiohttp
-import requests
 import os
 import dotenv
 from pathlib import Path
